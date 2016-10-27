@@ -1,0 +1,102 @@
+2)
+
+                                                   QUERY PLAN                                                    
+-----------------------------------------------------------------------------------------------------------------
+ Sort  (cost=1129963.14..1129965.63 rows=997 width=36)
+   Sort Key: movie.production_year DESC, movie.title
+   ->  Nested Loop  (cost=75911.34..1129913.48 rows=997 width=36)
+         ->  Nested Loop  (cost=75910.91..1129450.54 rows=997 width=25)
+               ->  Nested Loop Semi Join  (cost=75910.48..1128531.41 rows=1994 width=12)
+                     ->  Hash Semi Join  (cost=75909.90..1127233.38 rows=1994 width=8)
+                           Hash Cond: (cast_info.person_role_id = char_name.id)
+                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Hash  (cost=75909.89..75909.89 rows=1 width=4)
+                                 ->  Seq Scan on char_name  (cost=0.00..75909.89 rows=1 width=4)
+                                       Filter: ((name)::text = 'Morpheus'::text)
+                     ->  Nested Loop Semi Join  (cost=0.58..0.64 rows=1 width=4)
+                           ->  Index Scan using movie_pkey on movie movie_1  (cost=0.43..0.45 rows=1 width=8)
+                                 Index Cond: (id = cast_info.movie_id)
+                           ->  Index Scan using movie_type5_pkey on movie_type  (cost=0.15..0.17 rows=1 width=4)
+                                 Index Cond: (id = movie_1.kind_id)
+                                 Filter: ((kind)::text = 'video game'::text)
+               ->  Index Scan using movie_pkey on movie  (cost=0.43..0.45 rows=1 width=25)
+                     Index Cond: (id = cast_info.movie_id)
+         ->  Index Scan using person_pkey on person  (cost=0.43..0.45 rows=1 width=19)
+               Index Cond: (id = cast_info.person_id)
+(21 rows)
+
+3)
+
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2275683.07..2275683.08 rows=3 width=15)
+   Sort Key: person.name
+   ->  Nested Loop  (cost=2275658.04..2275683.04 rows=3 width=15)
+         ->  HashAggregate  (cost=2275657.60..2275657.63 rows=3 width=4)
+               Group Key: ci1.person_id
+               ->  Hash Join  (cost=1118611.83..2275657.60 rows=3 width=4)
+                     Hash Cond: ((ci1.movie_id = ci2.movie_id) AND (ci1.person_id = ci2.person_id))
+                     ->  Hash Join  (cost=23.61..1117062.27 rows=536632 width=8)
+                           Hash Cond: (ci1.role_id = rt1.id)
+                           ->  Seq Scan on cast_info ci1  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4)
+                                 ->  Seq Scan on role_type rt1  (cost=0.00..23.50 rows=9 width=4)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                     ->  Hash  (cost=1114078.67..1114078.67 rows=238503 width=8)
+                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=8)
+                                 Hash Cond: (ci2.role_id = rt2.id)
+                                 ->  Seq Scan on cast_info ci2  (cost=0.00..910435.52 rows=53663152 width=12)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4)
+                                       ->  Seq Scan on role_type rt2  (cost=0.00..21.25 rows=4 width=4)
+                                             Filter: ((role)::text = 'director'::text)
+         ->  Index Scan using person_pkey on person  (cost=0.43..8.45 rows=1 width=19)
+               Index Cond: (id = ci1.person_id)
+(22 rows)
+
+6)
+
+                                                                                                          QUERY PLAN                                                                                                           
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=325188.70..325796.06 rows=242941 width=25)
+   Sort Key: (((count(CASE WHEN ((movie_rating.info)::text = '1.0'::text) THEN 1 ELSE NULL::integer END) + (count(CASE WHEN ((movie_rating.info)::text = '10.0'::text) THEN 1 ELSE NULL::integer END) * 10)) / count(*))) DESC
+   ->  Merge Join  (cost=113984.47..297643.83 rows=242941 width=25)
+         Merge Cond: (movie_rating.movie_id = movie.id)
+         ->  GroupAggregate  (cost=113984.04..135751.61 rows=242941 width=9)
+               Group Key: movie_rating.movie_id
+               Filter: (count(CASE WHEN (((movie_rating.info)::text <> '1.0'::text) AND ((movie_rating.info)::text <> '10.0'::text)) THEN 1 ELSE NULL::integer END) = 0)
+               ->  Sort  (cost=113984.04..115674.92 rows=676350 width=9)
+                     Sort Key: movie_rating.movie_id
+                     ->  Seq Scan on movie_rating  (cost=0.00..36927.80 rows=676350 width=9)
+                           Filter: (info_type_id = 101)
+         ->  Index Scan using movie_pkey on movie  (cost=0.43..146668.63 rows=3902967 width=21)
+(12 rows)
+
+8)
+
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=326434.80..326534.38 rows=39834 width=34)
+   Sort Key: m1.title, m2.title
+   ->  Merge Join  (cost=166268.42..323391.14 rows=39834 width=34)
+         Merge Cond: (m2.id = movie_link.linked_movie_id)
+         Join Filter: (m1.id <> m2.id)
+         ->  Index Scan using movie_pkey on movie m2  (cost=0.43..146668.63 rows=3902967 width=21)
+         ->  Sort  (cost=166267.99..166367.58 rows=39834 width=25)
+               Sort Key: movie_link.linked_movie_id
+               ->  Merge Join  (cost=6201.21..163224.34 rows=39834 width=25)
+                     Merge Cond: (m1.id = movie_link.movie_id)
+                     ->  Index Scan using movie_pkey on movie m1  (cost=0.43..146668.63 rows=3902967 width=21)
+                     ->  Sort  (cost=6200.78..6300.36 rows=39834 width=8)
+                           Sort Key: movie_link.movie_id
+                           ->  HashAggregate  (cost=2360.44..2758.78 rows=39834 width=8)
+                                 Group Key: movie_link.movie_id, movie_link.linked_movie_id
+                                 ->  Append  (cost=0.00..2161.27 rows=39834 width=8)
+                                       ->  Seq Scan on movie_link  (cost=0.00..154.99 rows=9999 width=8)
+                                       ->  Hash Join  (cost=279.98..1607.94 rows=29835 width=8)
+                                             Hash Cond: (movie_link_2.movie_id = movie_link_1.linked_movie_id)
+                                             Join Filter: (movie_link_1.movie_id <> movie_link_2.linked_movie_id)
+                                             ->  Seq Scan on movie_link movie_link_2  (cost=0.00..154.99 rows=9999 width=8)
+                                             ->  Hash  (cost=154.99..154.99 rows=9999 width=8)
+                                                   ->  Seq Scan on movie_link movie_link_1  (cost=0.00..154.99 rows=9999 width=8)
+(23 rows)
+
