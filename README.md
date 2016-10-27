@@ -1,7 +1,6 @@
 # DMS-Project---IMDB
 
-1
-Overview
+1 - Overview \\
 We provide a set of files here:
 https://drive.google.com/file/d/0B4t1oOFzubodRmZhV1NoOG1DWDQ/view
 Each file comprises the tuples of one relation; the relations, together, model the data from the Internet
