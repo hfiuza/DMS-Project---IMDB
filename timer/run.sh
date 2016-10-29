@@ -18,6 +18,9 @@ DATABASE=inf553
 DATE_CMD=gdate
 # -------------------------------------------
 
+# number of iterations to get the average
+ITERATIONS=10
+
 # source and output files
 QUERY_NUM=$1
 QUERY_SRC=q$1.sql
@@ -34,11 +37,18 @@ if [ "$2" = explain ]; then
     rm -f tmp.sql
 else
     rm -f $QUERY_DIR/$QUERY_OUT
-    START=$($DATE_CMD +%s.%N)
-    $PSQL $DATABASE -f $QUERY_DIR/$QUERY_SRC > $QUERY_DIR/$QUERY_OUT
-    END=$($DATE_CMD +%s.%N)
-    DIFF=$(echo "$END - $START" | bc)
-    echo $DIFF
+    SUM=0
+    for i in $(seq 1 1 $ITERATIONS)
+    do
+        START=$($DATE_CMD +%s.%N)
+        $PSQL $DATABASE -f $QUERY_DIR/$QUERY_SRC > $QUERY_DIR/$QUERY_OUT
+        END=$($DATE_CMD +%s.%N)
+        DIFF=$(echo "$END - $START" | bc)
+        SUM=$(echo "$SUM + $DIFF" | bc)
+        echo "iteration $i: $SUM"
+    done
+    AVR=$(echo "$SUM/$ITERATIONS" | bc -l)
+    echo "average $AVR"
 fi
 
 
