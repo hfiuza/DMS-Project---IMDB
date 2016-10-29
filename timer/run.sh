@@ -13,13 +13,13 @@ fi
 PSQL=./psql
 QUERY_DIR=../queries
 DATABASE=inf553
-QUERY_NUM=$1
 # mac users (gdate)
 # linux users (date)
 DATE_CMD=gdate
 # -------------------------------------------
 
 # source and output files
+QUERY_NUM=$1
 QUERY_SRC=q$1.sql
 QUERY_OUT=q$1.out
 QUERY_EXPLAIN=explain$1.out
