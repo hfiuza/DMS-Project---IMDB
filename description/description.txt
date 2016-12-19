@@ -94,6 +94,15 @@ DELETE FROM aka_title
 WHERE
 	NOT EXISTS (SELECT 1 FROM movie WHERE movie.id=aka_title.movie_id)
 
+/*
+PLEASE READ
+We considered that movie_fk must be a foreign key at table aka_title and that storing titles that did not belong to any movie was useless
+So we first loaded all titles and then removed titles that were not associated to any movie
+By doing so, we did not miss any information and could ensure a reasonable and quite important constraint.
+In addition to that, we were only informed that movie_fk was not supposed to be a foreign key after we had already implemented most of our entire project.
+*/
+
+
 ALTER TABLE aka_title
 ADD CONSTRAINT movie_fk
 FOREIGN KEY(movie_id)
@@ -414,8 +423,9 @@ Query 8
 C. Improving query performance
 
 Although we had already sought to produce efficient queries, we decided to further optimize queries 3 and 4. We have timed the execution time for each approach.
+Then we create indexes to well-chosen columns
 
-Query 3
+Query 3 (DIEGO)
 
 1st approach: 113.75 s
 
