@@ -6,7 +6,7 @@ names (increasing alphabetical order).
 
 /* non optmized 
 
-Total time: 93.110687278 s
+Total time: 207936.09 to 208004.03 Ms
 
 SELECT person.name
 FROM person
@@ -16,14 +16,13 @@ WHERE EXISTS (SELECT 1
 )
 ORDER BY person.name
 */
-
 /*
 This is one of the most simple algorithms and has the best performance
 
-Total time: 72.70 s
+Total time: 59386.02 to 59410.5 ms
+*/
 
-
-SELECT person.name
+EXPLAIN ANALYZE SELECT person.name
 FROM person, (
 	SELECT DISTINCT CI1.person_id
 	FROM role_type RT1, role_type RT2, cast_info CI1, cast_info CI2
@@ -32,12 +31,11 @@ FROM person, (
 WHERE person.id=ids.person_id
 ORDER BY person.name ASC;
 
-*/
 
 /*
 We used a JOIN to get a faster algorithm
 
-Total time: 41.1
+Total time: from 65941.03 to 65966.40 ms
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -52,13 +50,11 @@ WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
 */
 
-
 /*
-We then tried a more simple approach using JOIN. It was faster, but couldn't beat the first optmizing approach
+We then tried a more simple approach using JOIN. It was faster, but couldn't beat the first optmization approach
 
-Total time: 52.223502379
+Total time: 67800.57 to 67827.10
 
-*/
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -71,13 +67,7 @@ FROM person, (SELECT DISTINCT person_id
 WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
 
-
-
-
-
-
-
-
+*/
 
 
 

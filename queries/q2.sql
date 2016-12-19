@@ -7,9 +7,9 @@ order.
 /*
 This query is simple and can be opitmized
 
-Total time: 12.203769930 
+Actual time: 12313.37 
 
-SELECT person.name, movie.title
+EXPLAIN ANALYZE SELECT person.name, movie.title
 FROM movie, movie_type, person, cast_info, char_name
 WHERE movie_type.kind='video game' AND movie_type.id=movie.kind_id AND movie.id=cast_info.movie_id AND person.id=cast_info.person_id AND cast_info.person_role_id=char_name.id AND char_name.name='Morpheus'
 ORDER BY movie.production_year DESC, movie.title ASC;
@@ -18,7 +18,7 @@ ORDER BY movie.production_year DESC, movie.title ASC;
 /*
 This query is more complicated and results in a better performance
 
-Total time: 6.350557653
+Actual time: 8925.43 ms
 */
 
 SELECT person.name, movie.title
@@ -32,4 +32,3 @@ FROM movie, person, (SELECT cast_info.person_id, cast_info.movie_id FROM cast_in
 	) AS ids
 WHERE person.id=ids.person_id AND movie.id=ids.movie_id
 ORDER BY movie.production_year DESC, movie.title ASC;
-

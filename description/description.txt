@@ -413,7 +413,7 @@ Query 8
 
 C. Improving query performance
 
-Although we sought to produce efficient queries, we decided to further optimize queries 3 and 4. We have timed the execution time for each approach.
+Although we had already sought to produce efficient queries, we decided to further optimize queries 3 and 4. We have timed the execution time for each approach.
 
 Query 3
 
