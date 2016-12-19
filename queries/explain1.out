@@ -1,15 +1,15 @@
                                                QUERY PLAN                                               
 --------------------------------------------------------------------------------------------------------
- Unique  (cost=1163582.01..1163599.44 rows=2324 width=21)
-   ->  Sort  (cost=1163582.01..1163587.82 rows=2324 width=21)
+ Unique  (cost=1163002.99..1163020.24 rows=2300 width=21)
+   ->  Sort  (cost=1163002.99..1163008.74 rows=2300 width=21)
          Sort Key: movie.production_year DESC, movie.title
-         ->  Nested Loop  (cost=109425.21..1163452.07 rows=2324 width=21)
-               ->  Nested Loop  (cost=109424.78..1162372.98 rows=2324 width=29)
-                     ->  Hash Semi Join  (cost=109424.35..1161301.75 rows=2324 width=12)
+         ->  Nested Loop  (cost=109420.41..1162874.57 rows=2300 width=21)
+               ->  Nested Loop  (cost=109419.98..1161806.61 rows=2300 width=29)
+                     ->  Hash Semi Join  (cost=109419.55..1160746.43 rows=2300 width=12)
                            Hash Cond: (cast_info.person_id = person_1.id)
-                           ->  Seq Scan on cast_info  (cost=0.00..910871.36 rows=53706736 width=8)
-                           ->  Hash  (cost=109424.31..109424.31 rows=3 width=4)
-                                 ->  Seq Scan on person person_1  (cost=0.00..109424.31 rows=3 width=4)
+                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                           ->  Hash  (cost=109419.51..109419.51 rows=3 width=4)
+                                 ->  Seq Scan on person person_1  (cost=0.00..109419.51 rows=3 width=4)
                                        Filter: ((name)::text = 'Cage, Nicolas'::text)
                      ->  Index Scan using movie_pkey on movie  (cost=0.43..0.45 rows=1 width=25)
                            Index Cond: (id = cast_info.movie_id)

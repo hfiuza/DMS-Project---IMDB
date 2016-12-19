@@ -20,9 +20,10 @@ ORDER BY person.name
 /*
 This is one of the most simple algorithms and has the best performance
 
-Total time: 48.843960571 s
-*/
-EXPLAIN SELECT person.name
+Total time: 72.70 s
+
+
+SELECT person.name
 FROM person, (
 	SELECT DISTINCT CI1.person_id
 	FROM role_type RT1, role_type RT2, cast_info CI1, cast_info CI2
@@ -31,11 +32,12 @@ FROM person, (
 WHERE person.id=ids.person_id
 ORDER BY person.name ASC;
 
+*/
 
 /*
-We tried to optimize using a JOIN, but we got a slower algorithm
+We used a JOIN to get a faster algorithm
 
-Total time: 57.461556533
+Total time: 41.1
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -48,13 +50,15 @@ FROM person, (SELECT DISTINCT person_id
 ) AS selected_person
 WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
-
 */
+
 
 /*
 We then tried a more simple approach using JOIN. It was faster, but couldn't beat the first optmizing approach
 
 Total time: 52.223502379
+
+*/
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -67,7 +71,6 @@ FROM person, (SELECT DISTINCT person_id
 WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
 
-*/
 
 
 

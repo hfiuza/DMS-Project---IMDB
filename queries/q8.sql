@@ -5,7 +5,7 @@ m1 to m2, if either (i) m1 references m2, or (ii) m1 references m3, and m3 indir
 m2.
 */
 
-EXPLAIN SELECT M1.title AS title1, M2.title AS title2
+SELECT M1.title AS title1, M2.title AS title2
 FROM movie M1, movie M2, (SELECT movie_id AS m1, linked_movie_id AS m2
 	FROM movie_link
 	UNION

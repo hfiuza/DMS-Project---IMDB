@@ -1,0 +1,29 @@
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2361563.55..2361738.55 rows=70003 width=15)
+   Sort Key: person.name
+   ->  Hash Join  (cost=2237628.98..2355930.01 rows=70003 width=15)
+         Hash Cond: (cast_info.person_id = cast_info_1.person_id)
+         ->  Hash Join  (cost=1116950.03..1234288.52 rows=70003 width=23)
+               Hash Cond: (person.id = cast_info.person_id)
+               ->  Seq Scan on person  (cost=0.00..94981.61 rows=5775161 width=19)
+               ->  Hash  (cost=1116074.99..1116074.99 rows=70003 width=4)
+                     ->  HashAggregate  (cost=1114674.93..1115374.96 rows=70003 width=4)
+                           Group Key: cast_info.person_id
+                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=4)
+                                 Hash Cond: (cast_info.role_id = role_type.id)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4)
+                                       ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4)
+                                             Filter: ((role)::text = 'director'::text)
+         ->  Hash  (cost=1119803.91..1119803.91 rows=70003 width=4)
+               ->  HashAggregate  (cost=1118403.85..1119103.88 rows=70003 width=4)
+                     Group Key: cast_info_1.person_id
+                     ->  Hash Join  (cost=23.61..1117062.27 rows=536632 width=4)
+                           Hash Cond: (cast_info_1.role_id = role_type_1.id)
+                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910435.52 rows=53663152 width=8)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4)
+                                 ->  Seq Scan on role_type role_type_1  (cost=0.00..23.50 rows=9 width=4)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+(25 rows)
+

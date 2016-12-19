@@ -1,0 +1,583 @@
+A. Loading
+
+We load from inputdata, that must be specified by the user in the beginning of the code
+
+
+\set inputdir '\'/home/hfiuza/Desktop/Polytechnique/DMS/data'
+
+CREATE TABLE public.movie_type
+(
+  id integer NOT NULL,
+  kind character varying(50),
+  CONSTRAINT movie_type5_pkey PRIMARY KEY (id)
+);
+
+copy movie_type from :inputdir/movie_type.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE info_type(
+	id INT NOT NULL,
+	info VARCHAR(50),
+	PRIMARY KEY(id)
+);
+
+copy info_type from :inputdir/info_type.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE keyword(
+	id INT,
+	keyword VARCHAR(125),
+	PRIMARY KEY(id)
+);
+
+copy keyword from :inputdir/keyword.csv' DELIMITER ',' HEADER CSV;
+
+/* reading table person */
+CREATE TABLE person(
+	id INT NOT NULL,
+	name VARCHAR(180) NOT NULL,
+	gender CHAR,
+	PRIMARY KEY(id)
+);
+
+copy person from :inputdir/person.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE company(
+	id INT NOT NULL PRIMARY KEY,
+	name VARCHAR(150) NOT NULL,
+	country_code VARCHAR(8)
+);
+
+copy company from :inputdir/company.csv' DELIMITER ',' HEADER CSV;
+
+/* more movie.csv | cut -d ',' -f2 | wc -L */
+
+CREATE TABLE movie(
+	id INT NOT NULL PRIMARY KEY,
+	title VARCHAR(320) NOT NULL,
+	kind_id INT NOT NULL REFERENCES movie_type(id),
+	production_year INT,
+	episode_of_id INT REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	season_nr INT,
+	episode_nr INT,
+	series_years VARCHAR(10)
+);
+
+copy movie from :inputdir/movie.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE aka_name(
+	id INT NOT NULL PRIMARY KEY,
+	person_id INT NOT NULL REFERENCES person(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	name VARCHAR(250)
+);
+
+copy aka_name from :inputdir/aka_name.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE aka_title(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL,
+	title VARCHAR(600),
+	kind_id INT NOT NULL REFERENCES movie_type(id),
+	production_year INT,
+	episode_of_id INT REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	season_nr INT,
+	episode_nr INT,
+	note VARCHAR(250),
+	CONSTRAINT movie_fk FOREIGN KEY(movie_id)
+	REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+ALTER TABLE aka_title
+DROP CONSTRAINT movie_fk
+
+copy aka_title from :inputdir/aka_title.csv' DELIMITER ',' HEADER CSV;
+
+DELETE FROM aka_title
+WHERE
+	NOT EXISTS (SELECT 1 FROM movie WHERE movie.id=aka_title.movie_id)
+
+ALTER TABLE aka_title
+ADD CONSTRAINT movie_fk
+FOREIGN KEY(movie_id)
+REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE
+
+
+CREATE TABLE link_type(
+	id INT NOT NULL PRIMARY KEY,
+	link VARCHAR(40) NOT NULL
+);
+	
+copy link_type from :inputdir/link_type.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE movie_link(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	linked_movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	link_type_id INT NOT NULL REFERENCES link_type(id)
+);
+
+copy movie_link from :inputdir/movie_link.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE movie_rating(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	info_type_id INT NOT NULL REFERENCES info_type(id) ON UPDATE CASCADE ON DELETE NO ACTION,
+	info VARCHAR(30) NOT NULL
+);
+
+copy movie_rating from :inputdir/movie_rating.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE char_name(
+	id INT NOT NULL PRIMARY KEY,
+	name VARCHAR(500) NOT NULL
+);
+
+copy char_name from :inputdir/char_name.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE comp_cast_type(
+	id INT NOT NULL PRIMARY KEY,
+	name VARCHAR(20) NOT NULL
+);
+
+copy comp_cast_type from :inputdir/comp_cast_type.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE person_info(
+	id INT NOT NULL PRIMARY KEY,
+	person_id INT NOT NULL REFERENCES person(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	info_type_id INT NOT NULL REFERENCES info_type(id) ON DELETE NO ACTION ON UPDATE CASCADE,
+	info VARCHAR(55900),
+	note VARCHAR(400)
+);
+
+copy person_info from :inputdir/person_info.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE role_type(
+	id INT NOT NULL PRIMARY KEY,
+	role VARCHAR(20)
+);
+
+copy role_type from :inputdir/role_type.csv' DELIMITER ',' HEADER CSV;
+
+
+CREATE TABLE cast_info(
+	id INT NOT NULL PRIMARY KEY,
+	person_id INT NOT NULL REFERENCES person(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	person_role_id INT REFERENCES char_name(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	note VARCHAR(550),
+	role_id INT NOT NULL REFERENCES role_type(id)
+);
+
+copy cast_info from :inputdir/cast_info.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE company_type(
+	id INT NOT NULL PRIMARY KEY,
+	kind VARCHAR(30) NOT NULL
+);
+
+copy company_type from :inputdir/company_type.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE movie_company(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	company_id INT NOT NULL REFERENCES company(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	company_type_id INT REFERENCES company_type(id) ON DELETE NO ACTION ON UPDATE CASCADE,
+	note VARCHAR(250)
+);
+
+copy movie_company from :inputdir/movie_company.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE movie_info(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	info_type_id INT REFERENCES info_type(id) ON DELETE NO ACTION ON UPDATE CASCADE,
+	info VARCHAR(35200),
+	note VARCHAR(35200)
+);
+
+copy movie_info from :inputdir/movie_info.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE complete_cast(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	subject_id INT NOT NULL REFERENCES comp_cast_type ON DELETE NO ACTION ON UPDATE CASCADE,
+	status_id INT NOT NULL REFERENCES comp_cast_type ON DELETE NO ACTION ON UPDATE CASCADE
+);
+
+copy complete_cast from :inputdir/complete_cast.csv' DELIMITER ',' HEADER CSV;
+
+CREATE TABLE  movie_keyword(
+	id INT NOT NULL PRIMARY KEY,
+	movie_id INT NOT NULL REFERENCES movie(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	keyword_id INT NOT NULL REFERENCES keyword(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+copy movie_keyword from :inputdir/movie_keyword.csv' DELIMITER ',' HEADER CSV;
+
+
+B. Query plans
+
+Query 1
+                                               QUERY PLAN                                               
+--------------------------------------------------------------------------------------------------------
+ Unique  (cost=1163002.99..1163020.24 rows=2300 width=21)
+   ->  Sort  (cost=1163002.99..1163008.74 rows=2300 width=21)
+         Sort Key: movie.production_year DESC, movie.title
+         ->  Nested Loop  (cost=109420.41..1162874.57 rows=2300 width=21)
+               ->  Nested Loop  (cost=109419.98..1161806.61 rows=2300 width=29)
+                     ->  Hash Semi Join  (cost=109419.55..1160746.43 rows=2300 width=12)
+                           Hash Cond: (cast_info.person_id = person_1.id)
+                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                           ->  Hash  (cost=109419.51..109419.51 rows=3 width=4)
+                                 ->  Seq Scan on person person_1  (cost=0.00..109419.51 rows=3 width=4)
+                                       Filter: ((name)::text = 'Cage, Nicolas'::text)
+                     ->  Index Scan using movie_pkey on movie  (cost=0.43..0.45 rows=1 width=25)
+                           Index Cond: (id = cast_info.movie_id)
+               ->  Index Only Scan using person_pkey on person  (cost=0.43..0.45 rows=1 width=4)
+                     Index Cond: (id = cast_info.person_id)
+(15 rows)
+
+Query 2
+                                                   QUERY PLAN                                                    
+-----------------------------------------------------------------------------------------------------------------
+ Sort  (cost=1129963.14..1129965.63 rows=997 width=36)
+   Sort Key: movie.production_year DESC, movie.title
+   ->  Nested Loop  (cost=75911.34..1129913.48 rows=997 width=36)
+         ->  Nested Loop  (cost=75910.91..1129450.54 rows=997 width=25)
+               ->  Nested Loop Semi Join  (cost=75910.48..1128531.41 rows=1994 width=12)
+                     ->  Hash Semi Join  (cost=75909.90..1127233.38 rows=1994 width=8)
+                           Hash Cond: (cast_info.person_role_id = char_name.id)
+                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Hash  (cost=75909.89..75909.89 rows=1 width=4)
+                                 ->  Seq Scan on char_name  (cost=0.00..75909.89 rows=1 width=4)
+                                       Filter: ((name)::text = 'Morpheus'::text)
+                     ->  Nested Loop Semi Join  (cost=0.58..0.64 rows=1 width=4)
+                           ->  Index Scan using movie_pkey on movie movie_1  (cost=0.43..0.45 rows=1 width=8)
+                                 Index Cond: (id = cast_info.movie_id)
+                           ->  Index Scan using movie_type5_pkey on movie_type  (cost=0.15..0.17 rows=1 width=4)
+                                 Index Cond: (id = movie_1.kind_id)
+                                 Filter: ((kind)::text = 'video game'::text)
+               ->  Index Scan using movie_pkey on movie  (cost=0.43..0.45 rows=1 width=25)
+                     Index Cond: (id = cast_info.movie_id)
+         ->  Index Scan using person_pkey on person  (cost=0.43..0.45 rows=1 width=19)
+               Index Cond: (id = cast_info.person_id)
+(21 rows)
+
+Query 3
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2275683.07..2275683.08 rows=3 width=15)
+   Sort Key: person.name
+   ->  Nested Loop  (cost=2275658.04..2275683.04 rows=3 width=15)
+         ->  HashAggregate  (cost=2275657.60..2275657.63 rows=3 width=4)
+               Group Key: ci1.person_id
+               ->  Hash Join  (cost=1118611.83..2275657.60 rows=3 width=4)
+                     Hash Cond: ((ci1.movie_id = ci2.movie_id) AND (ci1.person_id = ci2.person_id))
+                     ->  Hash Join  (cost=23.61..1117062.27 rows=536632 width=8)
+                           Hash Cond: (ci1.role_id = rt1.id)
+                           ->  Seq Scan on cast_info ci1  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4)
+                                 ->  Seq Scan on role_type rt1  (cost=0.00..23.50 rows=9 width=4)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                     ->  Hash  (cost=1114078.67..1114078.67 rows=238503 width=8)
+                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=8)
+                                 Hash Cond: (ci2.role_id = rt2.id)
+                                 ->  Seq Scan on cast_info ci2  (cost=0.00..910435.52 rows=53663152 width=12)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4)
+                                       ->  Seq Scan on role_type rt2  (cost=0.00..21.25 rows=4 width=4)
+                                             Filter: ((role)::text = 'director'::text)
+         ->  Index Scan using person_pkey on person  (cost=0.43..8.45 rows=1 width=19)
+               Index Cond: (id = ci1.person_id)
+(22 rows)
+
+Query 4
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2361563.55..2361738.55 rows=70003 width=15)
+   Sort Key: person.name
+   ->  Hash Join  (cost=2237628.98..2355930.01 rows=70003 width=15)
+         Hash Cond: (cast_info.person_id = cast_info_1.person_id)
+         ->  Hash Join  (cost=1116950.03..1234288.52 rows=70003 width=23)
+               Hash Cond: (person.id = cast_info.person_id)
+               ->  Seq Scan on person  (cost=0.00..94981.61 rows=5775161 width=19)
+               ->  Hash  (cost=1116074.99..1116074.99 rows=70003 width=4)
+                     ->  HashAggregate  (cost=1114674.93..1115374.96 rows=70003 width=4)
+                           Group Key: cast_info.person_id
+                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=4)
+                                 Hash Cond: (cast_info.role_id = role_type.id)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4)
+                                       ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4)
+                                             Filter: ((role)::text = 'director'::text)
+         ->  Hash  (cost=1119803.91..1119803.91 rows=70003 width=4)
+               ->  HashAggregate  (cost=1118403.85..1119103.88 rows=70003 width=4)
+                     Group Key: cast_info_1.person_id
+                     ->  Hash Join  (cost=23.61..1117062.27 rows=536632 width=4)
+                           Hash Cond: (cast_info_1.role_id = role_type_1.id)
+                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910435.52 rows=53663152 width=8)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4)
+                                 ->  Seq Scan on role_type role_type_1  (cost=0.00..23.50 rows=9 width=4)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+(25 rows)
+
+Query 5
+                                               QUERY PLAN                                                
+---------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=1149164.05..1149333.02 rows=20 width=17)
+   ->  Limit  (cost=1149163.62..1149163.67 rows=20 width=4)
+         ->  Sort  (cost=1149163.62..1149759.88 rows=238503 width=4)
+               Sort Key: (count(cast_info.movie_id)) DESC
+               ->  GroupAggregate  (cost=1138643.34..1142817.14 rows=238503 width=4)
+                     Group Key: cast_info.movie_id
+                     ->  Sort  (cost=1138643.34..1139239.60 rows=238503 width=4)
+                           Sort Key: cast_info.movie_id
+                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=4)
+                                 Hash Cond: (cast_info.role_id = role_type.id)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4)
+                                       ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4)
+                                             Filter: ((role)::text = 'director'::text)
+   ->  Index Scan using movie_pkey on movie  (cost=0.43..8.45 rows=1 width=21)
+         Index Cond: (id = cast_info.movie_id)
+(16 rows)
+
+Query 6
+                                                                                                          QUERY PLAN                                                                                                           
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=325188.70..325796.06 rows=242941 width=25)
+   Sort Key: (((count(CASE WHEN ((movie_rating.info)::text = '1.0'::text) THEN 1 ELSE NULL::integer END) + (count(CASE WHEN ((movie_rating.info)::text = '10.0'::text) THEN 1 ELSE NULL::integer END) * 10)) / count(*))) DESC
+   ->  Merge Join  (cost=113984.47..297643.83 rows=242941 width=25)
+         Merge Cond: (movie_rating.movie_id = movie.id)
+         ->  GroupAggregate  (cost=113984.04..135751.61 rows=242941 width=9)
+               Group Key: movie_rating.movie_id
+               Filter: (count(CASE WHEN (((movie_rating.info)::text <> '1.0'::text) AND ((movie_rating.info)::text <> '10.0'::text)) THEN 1 ELSE NULL::integer END) = 0)
+               ->  Sort  (cost=113984.04..115674.92 rows=676350 width=9)
+                     Sort Key: movie_rating.movie_id
+                     ->  Seq Scan on movie_rating  (cost=0.00..36927.80 rows=676350 width=9)
+                           Filter: (info_type_id = 101)
+         ->  Index Scan using movie_pkey on movie  (cost=0.43..146668.63 rows=3902967 width=21)
+(12 rows)
+
+Query 7
+                                                  QUERY PLAN                                                   
+---------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=1221334.32..1221334.34 rows=1 width=40)
+   ->  Subquery Scan on number_of_movies_by_year  (cost=1221334.30..1221334.32 rows=1 width=40)
+         ->  HashAggregate  (cost=1221334.30..1221334.31 rows=1 width=4)
+               Group Key: movie.production_year
+               ->  Nested Loop  (cost=1221092.82..1221334.29 rows=1 width=4)
+                     ->  Nested Loop  (cost=1221092.67..1221329.61 rows=26 width=8)
+                           ->  HashAggregate  (cost=1221092.24..1221092.52 rows=28 width=4)
+                                 Group Key: cast_info.movie_id
+                                 ->  Hash Join  (cost=109419.55..1221092.17 rows=28 width=4)
+                                       Hash Cond: (cast_info.person_id = person.id)
+                                       ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                       ->  Hash  (cost=109419.51..109419.51 rows=3 width=4)
+                                             ->  Seq Scan on person  (cost=0.00..109419.51 rows=3 width=4)
+                                                   Filter: ((name)::text = 'Fonzi, Dolores'::text)
+                           ->  Index Scan using movie_pkey on movie  (cost=0.43..8.45 rows=1 width=12)
+                                 Index Cond: (id = cast_info.movie_id)
+                                 Filter: (production_year IS NOT NULL)
+                     ->  Index Scan using movie_type5_pkey on movie_type  (cost=0.15..0.17 rows=1 width=4)
+                           Index Cond: (id = movie.kind_id)
+                           Filter: ((kind)::text = 'movie'::text)
+(20 rows)
+
+Query 8
+                                                            QUERYPLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=326434.80..326534.38 rows=39834 width=34)
+   Sort Key: m1.title, m2.title
+   ->  Merge Join  (cost=166268.42..323391.14 rows=39834 width=34)
+         Merge Cond: (m2.id = movie_link.linked_movie_id)
+         Join Filter: (m1.id <> m2.id)
+         ->  Index Scan using movie_pkey on movie m2  (cost=0.43..146668.63 rows=3902967 width=21)
+         ->  Sort  (cost=166267.99..166367.58 rows=39834 width=25)
+               Sort Key: movie_link.linked_movie_id
+               ->  Merge Join  (cost=6201.21..163224.34 rows=39834 width=25)
+                     Merge Cond: (m1.id = movie_link.movie_id)
+                     ->  Index Scan using movie_pkey on movie m1  (cost=0.43..146668.63 rows=3902967 width=21)
+                     ->  Sort  (cost=6200.78..6300.36 rows=39834 width=8)
+                           Sort Key: movie_link.movie_id
+                           ->  HashAggregate  (cost=2360.44..2758.78 rows=39834 width=8)
+                                 Group Key: movie_link.movie_id, movie_link.linked_movie_id
+                                 ->  Append  (cost=0.00..2161.27 rows=39834 width=8)
+                                       ->  Seq Scan on movie_link  (cost=0.00..154.99 rows=9999 width=8)
+                                       ->  Hash Join  (cost=279.98..1607.94 rows=29835 width=8)
+                                             Hash Cond: (movie_link_2.movie_id = movie_link_1.linked_movie_id)
+                                             Join Filter: (movie_link_1.movie_id <> movie_link_2.linked_movie_id)
+                                             ->  Seq Scan on movie_link movie_link_2  (cost=0.00..154.99 rows=9999 width=8)
+                                             ->  Hash  (cost=154.99..154.99 rows=9999 width=8)
+                                                   ->  Seq Scan on movie_link movie_link_1  (cost=0.00..154.99 rows=9999 width=8)
+(23 rows)
+
+
+
+C. Improving query performance
+
+Although we sought to produce efficient queries, we decided to further optimize queries 3 and 4. We have timed the execution time for each approach.
+
+Query 3
+
+1st approach: 113.75 s
+
+For each iteration, we record the total time spent just after its execution
+iteration 1: 90.947109330
+iteration 2: 181.941134338
+iteration 3: 268.396849367
+iteration 4: 371.190869454
+iteration 5: 469.636751817
+iteration 6: 599.806559624
+iteration 7: 739.000073518
+iteration 8: 874.352489293
+iteration 9: 1006.241292790
+iteration 10: 1137.465907796
+average 113.74659077960000000000
+
+
+SELECT person.name
+FROM person
+WHERE EXISTS (SELECT 1
+	FROM role_type RT1, role_type RT2, cast_info CI1, cast_info CI2 
+	WHERE person.id=CI1.person_id AND person.id=CI2.person_id AND CI1.role_id=RT1.id AND CI2.role_id=RT2.id AND (RT1.role='actor' OR RT1.role='actress') AND RT2.role='director'
+)
+ORDER BY person.name
+
+2nd approach: 50.9 s . Most simple and fastest one
+
+For each iteration, we record the total time spent just after its execution
+iteration 1: 44.050991432
+iteration 2: 101.960799021
+iteration 3: 155.962935324
+iteration 4: 204.545007850
+iteration 5: 245.013935063
+iteration 6: 287.616139725
+iteration 7: 342.986330230
+iteration 8: 396.381231040
+iteration 9: 450.698802493
+iteration 10: 508.969620508
+average 50.89696205080000000000
+
+
+
+SELECT person.name
+FROM person, (
+	SELECT DISTINCT CI1.person_id
+	FROM role_type RT1, role_type RT2, cast_info CI1, cast_info CI2
+	WHERE (RT1.role='actor' OR RT1.role='actress') AND RT2.role='director' AND CI1.role_id=RT1.id AND CI2.role_id=RT2.id AND CI1.movie_id=CI2.movie_id AND CI1.person_id=CI2.person_id
+) AS ids
+WHERE person.id=ids.person_id
+ORDER BY person.name ASC;
+
+3rd approach: 41.1 s . More complicated but faster than than the second approach
+
+iteration 1: 71.133881535
+iteration 2: 122.478724657
+iteration 3: 170.220270737
+iteration 4: 209.244472089
+iteration 5: 243.342868602
+iteration 6: 275.335526788
+iteration 7: 313.342616820
+iteration 8: 344.460883560
+iteration 9: 378.951779783
+iteration 10: 410.991714201
+average 41.09917142010000000000
+
+SELECT person.name
+FROM person, (SELECT DISTINCT person_id
+	FROM role_type RT1, role_type RT2, (SELECT * FROM (SELECT role_id AS role_id_1, person_id, movie_id
+		FROM cast_info CI1) AS compact_cast_info_1
+		NATURAL JOIN
+		(SELECT role_id AS role_id_2, person_id, movie_id
+		FROM cast_info CI2) AS compact_cast_info_2) AS role_movie_person
+	WHERE RT1.role='director' AND (RT2.role='actor' OR RT2.role='actress') AND RT1.id=role_movie_person.role_id_1 AND RT2.id=role_movie_person.role_id_2
+) AS selected_person
+WHERE person.id=selected_person.person_id
+ORDER BY person.name ASC;
+
+4th approach: 50s . Slightly slower than the second approach
+
+SELECT person.name
+FROM person, (SELECT DISTINCT person_id
+	FROM role_type RT1, role_type RT2, (SELECT CI1.role_id AS role_id_1, CI2.role_id AS role_id_2, CI1.movie_id, CI1.person_id
+		FROM cast_info CI1
+		INNER JOIN cast_info CI2
+		ON CI1.movie_id=CI2.movie_id AND CI1.person_id=CI2.person_id) AS role_movie_person
+	WHERE RT1.role='director' AND (RT2.role='actor' OR RT2.role='actress') AND RT1.id=role_movie_person.role_id_1 AND RT2.id=role_movie_person.role_id_2
+) AS selected_person
+WHERE person.id=selected_person.person_id
+ORDER BY person.name ASC;
+
+Query 4
+
+1st approach: too slow. It actually does not work since it throws an "out of memory" message.
+
+SELECT person.name
+FROM person, (SELECT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE role_type.role = 'director'
+                    AND cast_info.role_id = role_type.id
+             ) AS ids1,
+            
+             (SELECT cast_info.person_id
+              FROM cast_info, role_type
+
+              WHERE (role_type.role = 'actor' OR role_type.role = 'actress')
+                    AND cast_info.role_id = role_type.id
+             ) AS ids2
+WHERE ids2.person_id=person.id AND ids1.person_id=person.id
+ORDER BY person.name;
+
+2nd approach: 50s . It is slow but works well.
+
+SELECT person.name
+FROM person, (SELECT DISTINCT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE role_type.role = 'director'
+                    AND cast_info.role_id = role_type.id
+             ) AS ids1,
+            
+             (SELECT DISTINCT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE (role_type.role = 'actor' OR role_type.role = 'actress')
+                    AND cast_info.role_id = role_type.id
+             ) AS ids2
+WHERE ids2.person_id=person.id AND ids1.person_id=person.id
+ORDER BY person.name;
+
+3rd approach: 35s . Fastest approach
+
+SELECT person.name
+FROM person, (SELECT *
+  FROM (SELECT DISTINCT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE role_type.role = 'director'
+                    AND cast_info.role_id = role_type.id
+             ) AS ids1
+       NATURAL JOIN
+      (SELECT DISTINCT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE (role_type.role = 'actor' OR role_type.role = 'actress')
+                    AND cast_info.role_id = role_type.id
+             ) AS ids2
+      )AS ids3
+WHERE ids3.person_id=person.id
+ORDER BY person.name;
+
+4th approach: too slow. It does not work and throws and "out of memory" message.
+
+SELECT person.name
+FROM person, (SELECT *
+  FROM (SELECT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE role_type.role = 'director'
+                    AND cast_info.role_id = role_type.id
+             ) AS ids1
+       NATURAL JOIN
+      (SELECT cast_info.person_id
+              FROM cast_info, role_type
+              WHERE (role_type.role = 'actor' OR role_type.role = 'actress')
+                    AND cast_info.role_id = role_type.id
+             ) AS ids2
+      )AS ids3
+WHERE ids3.person_id=person.id
+ORDER BY person.name;
+

@@ -1,0 +1,20 @@
+                                               QUERY PLAN                                                
+---------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=1149164.05..1149333.02 rows=20 width=17)
+   ->  Limit  (cost=1149163.62..1149163.67 rows=20 width=4)
+         ->  Sort  (cost=1149163.62..1149759.88 rows=238503 width=4)
+               Sort Key: (count(cast_info.movie_id)) DESC
+               ->  GroupAggregate  (cost=1138643.34..1142817.14 rows=238503 width=4)
+                     Group Key: cast_info.movie_id
+                     ->  Sort  (cost=1138643.34..1139239.60 rows=238503 width=4)
+                           Sort Key: cast_info.movie_id
+                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=4)
+                                 Hash Cond: (cast_info.role_id = role_type.id)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4)
+                                       ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4)
+                                             Filter: ((role)::text = 'director'::text)
+   ->  Index Scan using movie_pkey on movie  (cost=0.43..8.45 rows=1 width=21)
+         Index Cond: (id = cast_info.movie_id)
+(16 rows)
+
