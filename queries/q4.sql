@@ -3,8 +3,8 @@
 */
 
 /* First solution: Horrible. Does not work, throws "out of memory" message
+Actual time: 293321.49 to 381891.45
 
-Total time: 436.794156130
 
 SELECT person.name
 FROM person, (SELECT cast_info.person_id
@@ -20,13 +20,16 @@ FROM person, (SELECT cast_info.person_id
              ) AS ids2
 WHERE ids2.person_id=person.id AND ids1.person_id=person.id
 ORDER BY person.name;
-
 */
 
 /*
-Second solution: slow, but works
+Second solution: fastest solution
 
-Total time: 48.881915621
+Actual time: 50445.39 to 50520.36  ms
+
+After improving: 47178.64 to 47267.14 ms
+
+*/
 
 SELECT person.name
 FROM person, (SELECT DISTINCT cast_info.person_id
@@ -43,14 +46,13 @@ FROM person, (SELECT DISTINCT cast_info.person_id
 WHERE ids2.person_id=person.id AND ids1.person_id=person.id
 ORDER BY person.name;
 
-*/
 
 /*
-Third Solution: Faster
+Third Solution: Slightly slower
 
-Total time: 33.358004597
+Actual time: from 51985.471 to 52067.976 ms
 
-*/
+After improving: from 47448.09 to 47519.60 ms 
 
 SELECT person.name
 FROM person, (SELECT *
@@ -68,14 +70,12 @@ FROM person, (SELECT *
       )AS ids3
 WHERE ids3.person_id=person.id
 ORDER BY person.name;
-
-
+*/
 
 /* 
 Fourth Solution: Horrible. Does not work and throws a "out of memory" message
 
-Total time: 461.904054488
-
+Actual time: 304226.13 to 429150.49 ms
 
 SELECT person.name
 FROM person, (SELECT *

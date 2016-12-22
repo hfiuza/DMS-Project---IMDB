@@ -518,7 +518,10 @@ ORDER BY person.name ASC;
 
 Query 4
 
+We obtained significantly better results by creating hash index on columns representing persons ids on tables "cast_info" and "person". We did this because we observed that our queries most expensive parts relied on comparing person indexes from these tables or on selecting distinct indexes from a larger set of indexes.
+
 1st approach: too slow. It actually does not work since it throws an "out of memory" message.
+            - Actual time: ranges from 293321.49 to 381891.45 ms
 
 SELECT person.name
 FROM person, (SELECT cast_info.person_id
@@ -536,7 +539,8 @@ FROM person, (SELECT cast_info.person_id
 WHERE ids2.person_id=person.id AND ids1.person_id=person.id
 ORDER BY person.name;
 
-2nd approach: 50s . It is slow but works well.
+2nd approach: Fastest approach. 
+            - Actual time: 50s when unoptimized and 47s when optimized.
 
 SELECT person.name
 FROM person, (SELECT DISTINCT cast_info.person_id
@@ -553,7 +557,96 @@ FROM person, (SELECT DISTINCT cast_info.person_id
 WHERE ids2.person_id=person.id AND ids1.person_id=person.id
 ORDER BY person.name;
 
-3rd approach: 35s . Fastest approach
+- We studied the results from adding EXPLAIN ANALYZE to the beginning of the query
+
+   * Before adding the indexes
+
+ QUERY PLAN                                                                             
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2355179.13..2355181.25 rows=848 width=15) (actual time=50445.390..50520.359 rows=165453 loops=1)
+   Sort Key: person.name
+   Sort Method: external merge  Disk: 4136kB
+   ->  Hash Join  (cost=2237524.89..2355137.88 rows=848 width=15) (actual time=44890.746..49824.033 rows=165453 loops=1)
+         Hash Cond: (person.id = cast_info_1.person_id)
+         ->  Hash Join  (cost=1116898.11..1234240.11 rows=70003 width=23) (actual time=15142.401..19039.830 rows=444259 loops=1)
+               Hash Cond: (person.id = cast_info.person_id)
+               ->  Seq Scan on person  (cost=0.00..94984.16 rows=5775416 width=19) (actual time=0.009..1050.861 rows=5775416 loops=1)
+               ->  Hash  (cost=1116023.08..1116023.08 rows=70003 width=4) (actual time=15142.069..15142.069 rows=444259 loops=1)
+                     Buckets: 131072 (originally 131072)  Batches: 2 (originally 1)  Memory Usage: 8842kB
+                     ->  HashAggregate  (cost=1114623.02..1115323.05 rows=70003 width=4) (actual time=14916.546..15061.848 rows=444259 loops=1)
+                           Group Key: cast_info.person_id
+                           ->  Hash Join  (cost=21.30..1114026.80 rows=238486 width=4) (actual time=6303.281..14220.752 rows=2564862 loops=1)
+                                 Hash Cond: (cast_info.role_id = role_type.id)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8) (actual time=0.008..6605.415 rows=53659391 loops=1)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4) (actual time=0.012..0.012 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4) (actual time=0.008..0.009 rows=1 loops=1)
+                                             Filter: ((role)::text = 'director'::text)
+                                             Rows Removed by Filter: 11
+         ->  Hash  (cost=1119751.74..1119751.74 rows=70003 width=4) (actual time=29748.030..29748.030 rows=3774395 loops=1)
+               Buckets: 131072 (originally 131072)  Batches: 2 (originally 1)  Memory Usage: 67430kB
+               ->  HashAggregate  (cost=1118351.68..1119051.71 rows=70003 width=4) (actual time=27384.815..28935.614 rows=3774395 loops=1)
+                     Group Key: cast_info_1.person_id
+                     ->  Hash Join  (cost=23.61..1117010.19 rows=536594 width=4) (actual time=0.033..19421.546 rows=28817745 loops=1)
+                           Hash Cond: (cast_info_1.role_id = role_type_1.id)
+                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910397.92 rows=53659392 width=8) (actual time=0.010..6557.707 rows=53659391 loops=1)
+                           Hash Cond: (cast_info_1.role_id = role_type_1.id)
+                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910397.92 rows=53659392 width=8) (actual time=0.010..6557.707 rows=53659391 loops=1)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4) (actual time=0.011..0.011 rows=2 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                 ->  Seq Scan on role_type role_type_1  (cost=0.00..23.50 rows=9 width=4) (actual time=0.006..0.009 rows=2 loops=1)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                                       Rows Removed by Filter: 10
+ Planning time: 0.407 ms
+ Execution time: 50543.485 ms
+(34 rows)
+
+
+
+   * After adding the indexes, we observed a considerable reduction in the first hash join actual time. (3.3 s)
+
+QUERY PLAN                                                                             
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2355179.13..2355181.25 rows=848 width=15) (actual time=47178.640..47267.136 rows=165453 loops=1)
+   Sort Key: person.name
+   Sort Method: external merge  Disk: 4136kB
+   ->  Hash Join  (cost=2237524.89..2355137.88 rows=848 width=15) (actual time=41567.309..46578.262 rows=165453 loops=1)
+         Hash Cond: (person.id = cast_info_1.person_id)
+         ->  Hash Join  (cost=1116898.11..1234240.11 rows=70003 width=23) (actual time=15140.070..19040.407 rows=444259 loops=1)
+               Hash Cond: (person.id = cast_info.person_id)
+               ->  Seq Scan on person  (cost=0.00..94984.16 rows=5775416 width=19) (actual time=5.443..991.503 rows=5775416 loops=1)
+               ->  Hash  (cost=1116023.08..1116023.08 rows=70003 width=4) (actual time=15132.882..15132.882 rows=444259 loops=1)
+                     Buckets: 131072 (originally 131072)  Batches: 2 (originally 1)  Memory Usage: 8842kB
+                     ->  HashAggregate  (cost=1114623.02..1115323.05 rows=70003 width=4) (actual time=14912.434..15054.892 rows=444259 loops=1)
+                           Group Key: cast_info.person_id
+                           ->  Hash Join  (cost=21.30..1114026.80 rows=238486 width=4) (actual time=8366.454..14287.845 rows=2564862 loops=1)
+                                 Hash Cond: (cast_info.role_id = role_type.id)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8) (actual time=2.418..6953.044 rows=53659391 loops=1)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4) (actual time=0.017..0.017 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4) (actual time=0.012..0.013 rows=1 loops=1)
+                                             Filter: ((role)::text = 'director'::text)
+                                             Rows Removed by Filter: 11
+         ->  Hash  (cost=1119751.74..1119751.74 rows=70003 width=4) (actual time=26426.855..26426.855 rows=3774395 loops=1)
+               Buckets: 131072 (originally 131072)  Batches: 2 (originally 1)  Memory Usage: 67430kB
+               ->  HashAggregate  (cost=1118351.68..1119051.71 rows=70003 width=4) (actual time=23841.271..25664.024 rows=3774395 loops=1)
+                     Group Key: cast_info_1.person_id
+                     ->  Hash Join  (cost=23.61..1117010.19 rows=536594 width=4) (actual time=3.904..16932.589 rows=28817745 loops=1)
+                           Hash Cond: (cast_info_1.role_id = role_type_1.id)
+                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910397.92 rows=53659392 width=8) (actual time=3.856..5913.569 rows=53659391 loops=1)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4) (actual time=0.022..0.022 rows=2 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                 ->  Seq Scan on role_type role_type_1  (cost=0.00..23.50 rows=9 width=4) (actual time=0.013..0.018 rows=2 loops=1)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                                       Rows Removed by Filter: 10
+ Planning time: 0.413 ms
+ Execution time: 47279.224 ms
+(34 rows)
+
+
+
+3rd approach: slightly slower than the previous approach.
+            - Actual time: 52s when unoptimized and 47.5s when optimized
 
 SELECT person.name
 FROM person, (SELECT *
@@ -572,8 +665,11 @@ FROM person, (SELECT *
 WHERE ids3.person_id=person.id
 ORDER BY person.name;
 
-4th approach: too slow. It does not work and throws and "out of memory" message.
 
+We did not extend our analysis, but we believe that, analagously to the previous approach, the most expensive part is the natural join operation, where indexing yields a 4s reduction in the actual time.
+
+4th approach: too slow. It does not work and throws and "out of memory" message.
+            - Actual time: ranges from 304226.13 to 429150.49 ms
 SELECT person.name
 FROM person, (SELECT *
   FROM (SELECT cast_info.person_id
@@ -590,4 +686,3 @@ FROM person, (SELECT *
       )AS ids3
 WHERE ids3.person_id=person.id
 ORDER BY person.name;
-
