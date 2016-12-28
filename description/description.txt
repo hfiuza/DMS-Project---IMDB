@@ -422,26 +422,18 @@ Query 8
 
 C. Improving query performance
 
-Although we had already sought to produce efficient queries, we decided to further optimize queries 3 and 4. We have timed the execution time for each approach.
-Then we create indexes to well-chosen columns
+Although we had already sought to produce efficient queries, we decided to further optimize queries 3 and 4. We have analyzed the actual time for each approach. Then we create indexes to well-chosen columns
 
-Query 3 (DIEGO)
+Query 3 
 
-1st approach: 113.75 s
+We obtained significantly better results by creating a btree index (person_id, movie_id) on the table "cast_info". We did this because we observed that one of the most expensive part of our queries relied on a hash join in which the hash condition was:
 
-For each iteration, we record the total time spent just after its execution
-iteration 1: 90.947109330
-iteration 2: 181.941134338
-iteration 3: 268.396849367
-iteration 4: 371.190869454
-iteration 5: 469.636751817
-iteration 6: 599.806559624
-iteration 7: 739.000073518
-iteration 8: 874.352489293
-iteration 9: 1006.241292790
-iteration 10: 1137.465907796
-average 113.74659077960000000000
+    - Hash Cond: ((ci1.movie_id = ci2.movie_id) AND (ci1.person_id = ci2.person_id))
 
+where ci1 and ci2 are cast_info tables. With this optimization the best actual time was 51s.
+
+1st approach: The worst one.
+            - Actual time: 281s when not optmized and 151s when optimized.
 
 SELECT person.name
 FROM person
@@ -451,22 +443,8 @@ WHERE EXISTS (SELECT 1
 )
 ORDER BY person.name
 
-2nd approach: 50.9 s . Most simple and fastest one
-
-For each iteration, we record the total time spent just after its execution
-iteration 1: 44.050991432
-iteration 2: 101.960799021
-iteration 3: 155.962935324
-iteration 4: 204.545007850
-iteration 5: 245.013935063
-iteration 6: 287.616139725
-iteration 7: 342.986330230
-iteration 8: 396.381231040
-iteration 9: 450.698802493
-iteration 10: 508.969620508
-average 50.89696205080000000000
-
-
+2nd approach: The fastest one when not optimized and as fast as the 4th approach when optimized.
+            - Actual time: 68s when unoptimized and 51s when optimized.
 
 SELECT person.name
 FROM person, (
@@ -477,19 +455,80 @@ FROM person, (
 WHERE person.id=ids.person_id
 ORDER BY person.name ASC;
 
-3rd approach: 41.1 s . More complicated but faster than than the second approach
+- We studied the results from adding EXPLAIN ANALYZE to the beginning of the query
 
-iteration 1: 71.133881535
-iteration 2: 122.478724657
-iteration 3: 170.220270737
-iteration 4: 209.244472089
-iteration 5: 243.342868602
-iteration 6: 275.335526788
-iteration 7: 313.342616820
-iteration 8: 344.460883560
-iteration 9: 378.951779783
-iteration 10: 410.991714201
-average 41.09917142010000000000
+   * Before adding the indexes
+
+ QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2275576.39..2275576.40 rows=3 width=15) (actual time=68668.383..68745.828 rows=88676 loops=1)
+   Sort Key: person.name
+   Sort Method: external merge  Disk: 2216kB
+   ->  Nested Loop  (cost=2275551.36..2275576.37 rows=3 width=15) (actual time=61825.233..66635.453 rows=88676 loops=1)
+         ->  HashAggregate  (cost=2275550.93..2275550.96 rows=3 width=4) (actual time=61824.756..61868.474 rows=88676 loops=1)
+               Group Key: ci1.person_id
+               ->  Hash Join  (cost=1118559.70..2275550.92 rows=3 width=4) (actual time=20427.458..61658.512 rows=288987 loops=1)
+                     Hash Cond: ((ci1.movie_id = ci2.movie_id) AND (ci1.person_id = ci2.person_id))
+                     ->  Hash Join  (cost=23.61..1117010.19 rows=536594 width=8) (actual time=1.278..25393.253 rows=28817745 loops=1)
+                           Hash Cond: (ci1.role_id = rt1.id)
+                           ->  Seq Scan on cast_info ci1  (cost=0.00..910397.92 rows=53659392 width=12) (actual time=1.218..7010.481 rows=53659391 loops=1)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4) (actual time=0.033..0.033 rows=2 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                 ->  Seq Scan on role_type rt1  (cost=0.00..23.50 rows=9 width=4) (actual time=0.024..0.030 rows=2 loops=1)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                                       Rows Removed by Filter: 10
+                     ->  Hash  (cost=1114026.80..1114026.80 rows=238486 width=8) (actual time=20420.597..20420.597 rows=2564862 loops=1)
+                           Buckets: 131072 (originally 131072)  Batches: 64 (originally 4)  Memory Usage: 3073kB
+                           ->  Hash Join  (cost=21.30..1114026.80 rows=238486 width=8) (actual time=10748.441..19491.789 rows=2564862 loops=1)
+                                 Hash Cond: (ci2.role_id = rt2.id)
+                                 ->  Seq Scan on cast_info ci2  (cost=0.00..910397.92 rows=53659392 width=12) (actual time=0.008..7145.044 rows=53659391 loops=1)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Seq Scan on role_type rt2  (cost=0.00..21.25 rows=4 width=4) (actual time=0.007..0.009 rows=1 loops=1)
+                                             Filter: ((role)::text = 'director'::text)
+                                             Rows Removed by Filter: 11
+         ->  Index Scan using person_pkey on person  (cost=0.43..8.45 rows=1 width=19) (actual time=0.053..0.053 rows=1 loops=88676)
+               Index Cond: (id = ci1.person_id)
+ Planning time: 1.270 ms
+ Execution time: 68754.038 ms
+ (30 rows)
+
+   * After adding the indexes, we observed a considerable reduction in the first hash join actual time. (3.3 s)
+
+  QUERY PLAN                                                                                   
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2048460.09..2048460.09 rows=3 width=15) (actual time=50955.145..51033.772 rows=88676 loops=1)
+   Sort Key: person.name
+   Sort Method: external merge  Disk: 2216kB
+   ->  Nested Loop  (cost=2048435.06..2048460.06 rows=3 width=15) (actual time=42371.068..48995.080 rows=88676 loops=1)
+         ->  HashAggregate  (cost=2048434.62..2048434.65 rows=3 width=4) (actual time=42370.095..42410.913 rows=88676 loops=1)
+               Group Key: ci1.person_id
+               ->  Nested Loop  (cost=21.87..2048434.62 rows=3 width=4) (actual time=2.649..42188.819 rows=288987 loops=1)
+                     Join Filter: (ci1.role_id = rt1.id)
+                     Rows Removed by Join Filter: 9491355
+                     ->  Nested Loop  (cost=21.87..2048377.21 rows=251 width=8) (actual time=0.644..38502.816 rows=4890171 loops=1)
+                           ->  Hash Join  (cost=21.30..1114098.80 rows=238486 width=8) (actual time=0.421..20723.176 rows=2564862 loops=1)
+                                 Hash Cond: (ci2.role_id = rt2.id)
+                                 ->  Seq Scan on cast_info ci2  (cost=0.00..910469.92 rows=53659392 width=12) (actual time=0.205..7868.266 rows=53659391 loops=1)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4) (actual time=0.199..0.199 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Seq Scan on role_type rt2  (cost=0.00..21.25 rows=4 width=4) (actual time=0.192..0.194 rows=1 loops=1)
+                                             Filter: ((role)::text = 'director'::text)
+                                             Rows Removed by Filter: 11
+                           ->  Index Scan using person_movie_role_id_index on cast_info ci1  (cost=0.56..3.91 rows=1 width=12) (actual time=0.006..0.006 rows=2 loops=2564862)
+                                 Index Cond: ((person_id = ci2.person_id) AND (movie_id = ci2.movie_id))
+                     ->  Materialize  (cost=0.00..23.55 rows=9 width=4) (actual time=0.000..0.000 rows=2 loops=4890171)
+                           ->  Seq Scan on role_type rt1  (cost=0.00..23.50 rows=9 width=4) (actual time=0.007..0.013 rows=2 loops=1)
+                                 Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                                 Rows Removed by Filter: 10
+         ->  Index Scan using person_pkey on person  (cost=0.43..8.45 rows=1 width=19) (actual time=0.073..0.073 rows=1 loops=88676)
+               Index Cond: (id = ci1.person_id)
+ Planning time: 3.703 ms
+ Execution time: 51046.603 ms
+(28 rows)
+
+3rd approach: slightly slower than the fastest solution.
+            - Actual time: 69s when unoptimized and 52s when optimized.
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -503,7 +542,8 @@ FROM person, (SELECT DISTINCT person_id
 WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
 
-4th approach: 50s . Slightly slower than the second approach
+4th approach: Slower than the 2nd approach when not optmized and as fast as the 2nd when optmized.
+            - Actual time: 72s when unoptimized and 51s when optimized.
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -515,6 +555,80 @@ FROM person, (SELECT DISTINCT person_id
 ) AS selected_person
 WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
+
+- We studied the results from adding EXPLAIN ANALYZE to the beginning of the query
+
+   * Before adding the indexes
+
+QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2275720.39..2275720.40 rows=3 width=15) (actual time=71439.657..71528.970 rows=88676 loops=1)
+   Sort Key: person.name
+   Sort Method: external merge  Disk: 2216kB
+   ->  Nested Loop  (cost=2275695.36..2275720.37 rows=3 width=15) (actual time=62834.603..69368.896 rows=88676 loops=1)
+         ->  HashAggregate  (cost=2275694.93..2275694.96 rows=3 width=4) (actual time=62833.671..62877.301 rows=88676 loops=1)
+               Group Key: ci1.person_id
+               ->  Hash Join  (cost=1118631.70..2275694.92 rows=3 width=4) (actual time=21484.728..62667.352 rows=288987 loops=1)
+                     Hash Cond: ((ci2.movie_id = ci1.movie_id) AND (ci2.person_id = ci1.person_id))
+                     ->  Hash Join  (cost=23.61..1117082.19 rows=536594 width=8) (actual time=0.634..25209.960 rows=28817745 loops=1)
+                           Hash Cond: (ci2.role_id = rt2.id)
+                           ->  Seq Scan on cast_info ci2  (cost=0.00..910469.92 rows=53659392 width=12) (actual time=0.398..6738.182 rows=53659391 loops=1)
+                           ->  Hash  (cost=23.50..23.50 rows=9 width=4) (actual time=0.210..0.210 rows=2 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                 ->  Seq Scan on role_type rt2  (cost=0.00..23.50 rows=9 width=4) (actual time=0.197..0.203 rows=2 loops=1)
+                                       Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                                       Rows Removed by Filter: 10
+                     ->  Hash  (cost=1114098.80..1114098.80 rows=238486 width=8) (actual time=21461.938..21461.938 rows=2564862 loops=1)
+                           Buckets: 131072 (originally 131072)  Batches: 64 (originally 4)  Memory Usage: 3073kB
+                           ->  Hash Join  (cost=21.30..1114098.80 rows=238486 width=8) (actual time=0.291..20439.896 rows=2564862 loops=1)
+                                 Hash Cond: (ci1.role_id = rt1.id)
+                                 ->  Seq Scan on cast_info ci1  (cost=0.00..910469.92 rows=53659392 width=12) (actual time=0.005..7705.745 rows=53659391 loops=1)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4) (actual time=0.008..0.008 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Seq Scan on role_type rt1  (cost=0.00..21.25 rows=4 width=4) (actual time=0.005..0.006 rows=1 loops=1)
+                                             Filter: ((role)::text = 'director'::text)
+                                             Rows Removed by Filter: 11
+         ->  Index Scan using person_pkey on person  (cost=0.43..8.45 rows=1 width=19) (actual time=0.072..0.072 rows=1 loops=88676)
+               Index Cond: (id = ci1.person_id)
+ Planning time: 0.969 ms
+ Execution time: 71536.857 ms
+(30 rows)
+
+
+   * After adding the indexes, we observed a considerable reduction in the first hash join actual time. (3.3 s)
+
+                                                                                  QUERY PLAN                                                                                   
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2048460.09..2048460.09 rows=3 width=15) (actual time=50428.290..50505.698 rows=88676 loops=1)
+   Sort Key: person.name
+   Sort Method: external merge  Disk: 2216kB
+   ->  Nested Loop  (cost=2048435.06..2048460.06 rows=3 width=15) (actual time=41948.801..48465.651 rows=88676 loops=1)
+         ->  HashAggregate  (cost=2048434.62..2048434.65 rows=3 width=4) (actual time=41947.832..41988.441 rows=88676 loops=1)
+               Group Key: ci1.person_id
+               ->  Nested Loop  (cost=21.87..2048434.62 rows=3 width=4) (actual time=0.583..41765.223 rows=288987 loops=1)
+                     Join Filter: (ci2.role_id = rt2.id)
+                     Rows Removed by Join Filter: 9491355
+                     ->  Nested Loop  (cost=21.87..2048377.21 rows=251 width=8) (actual time=0.565..38076.543 rows=4890171 loops=1)
+                           ->  Hash Join  (cost=21.30..1114098.80 rows=238486 width=8) (actual time=0.550..20756.122 rows=2564862 loops=1)
+                                 Hash Cond: (ci1.role_id = rt1.id)
+                                 ->  Seq Scan on cast_info ci1  (cost=0.00..910469.92 rows=53659392 width=12) (actual time=0.004..7827.692 rows=53659391 loops=1)
+                                 ->  Hash  (cost=21.25..21.25 rows=4 width=4) (actual time=0.224..0.224 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                       ->  Seq Scan on role_type rt1  (cost=0.00..21.25 rows=4 width=4) (actual time=0.218..0.220 rows=1 loops=1)
+                                             Filter: ((role)::text = 'director'::text)
+                                             Rows Removed by Filter: 11
+                           ->  Index Scan using person_movie_role_id_index on cast_info ci2  (cost=0.56..3.91 rows=1 width=12) (actual time=0.005..0.006 rows=2 loops=2564862)
+                                 Index Cond: ((person_id = ci1.person_id) AND (movie_id = ci1.movie_id))
+                     ->  Materialize  (cost=0.00..23.55 rows=9 width=4) (actual time=0.000..0.000 rows=2 loops=4890171)
+                           ->  Seq Scan on role_type rt2  (cost=0.00..23.50 rows=9 width=4) (actual time=0.004..0.009 rows=2 loops=1)
+                                 Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
+                                 Rows Removed by Filter: 10
+         ->  Index Scan using person_pkey on person  (cost=0.43..8.45 rows=1 width=19) (actual time=0.072..0.072 rows=1 loops=88676)
+               Index Cond: (id = ci1.person_id)
+ Planning time: 1.515 ms
+ Execution time: 50519.042 ms
+(28 rows)
+
 
 Query 4
 

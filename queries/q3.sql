@@ -3,10 +3,15 @@ Find the name of all the people that have played in a movie they directed, and o
 names (increasing alphabetical order).
 */
 
+/* 
+First solution: Non optmized. Worst solution.
 
-/* non optmized 
+Actual time: 280828.25 to 281209.19 ms
 
-Actual time: 304644.215..305009.045 ms
+CREATE INDEX person_movie_id_index on cast_info (person_id, movie_id)
+cluster cast_info using person_movie_role_id_index
+
+After improving: 151215.595 to 151396.019 ms
 
 SELECT person.name
 FROM person
@@ -16,25 +21,20 @@ WHERE EXISTS (SELECT 1
 )
 ORDER BY person.name
 */
-/*
-This is one of the most simple algorithms and has the best performance
 
-Actual time: 74506.199 to 74602.415 ms
+/* 
+Second solution: The fastest one when not optimized and as fast as the 4th approach when optimized.
 
-70914.138..70997.263
-71054.303 to 71146.547 
-71379.822 to 71466.630 
-71386.171..71470.865
-70315.140..70396.448
-70603.474..70691.761
+Actual time: 68668.38 to 68745.83 ms
 
-Obs: after creating a hash index for the columns cast_info.person_id and cast_info.movie_id the 
-performance was slightly better. For 10 executions the best time was (...) ms and
-the worst was (...) ms
+CREATE INDEX person_movie_id_index on cast_info (person_id, movie_id)
+cluster cast_info using person_movie_role_id_index
+
+After improving: 50955.145 to 51033.772 ms
 
 */
 
-EXPLAIN ANALYZE SELECT person.name
+SELECT person.name
 FROM person, (
 	SELECT DISTINCT CI1.person_id
 	FROM role_type RT1, role_type RT2, cast_info CI1, cast_info CI2
@@ -45,9 +45,14 @@ ORDER BY person.name ASC;
 
 
 /*
-We used a JOIN to get a faster algorithm
+Third solution: slightly slower than the fastest solution.
 
-Actual time: from 78084.538 to 78182.289 ms
+Actual time: from 68819.53 to 68899.96 ms
+
+CREATE INDEX person_movie_id_index on cast_info (person_id, movie_id)
+cluster cast_info using person_movie_role_id_index
+
+After improving: 51574.661 to 51655.797 ms
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -63,10 +68,14 @@ ORDER BY person.name ASC;
 */
 
 /*
-We then tried a more simple approach using JOIN. It was faster, but couldn't beat the first optmization approach
+Fourth solution: Slower than the 2nd approach when not optmized and as fast as the 2nd when optmized.
 
-Actual time: 74811.495 to 74893.722 ms
+Actual time: 71439.657 to 71528.970 ms
 
+CREATE INDEX person_movie_id_index on cast_info (person_id, movie_id)
+cluster cast_info using person_movie_role_id_index
+
+After improving: 50428.290 to 50505.698 ms
 
 SELECT person.name
 FROM person, (SELECT DISTINCT person_id
@@ -80,8 +89,4 @@ WHERE person.id=selected_person.person_id
 ORDER BY person.name ASC;
 
 */
-
-
-
-
 
