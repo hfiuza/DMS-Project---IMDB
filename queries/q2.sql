@@ -21,7 +21,7 @@ This query is more complicated and results in a better performance
 Actual time: 8925.43 ms
 */
 
-SELECT person.name, movie.title
+EXPLAIN SELECT person.name, movie.title
 FROM movie, person, (SELECT cast_info.person_id, cast_info.movie_id FROM cast_info
 	WHERE cast_info.movie_id IN (SELECT movie.id
 		FROM movie

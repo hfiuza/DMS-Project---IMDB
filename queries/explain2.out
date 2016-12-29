@@ -1,13 +1,13 @@
                                                    QUERY PLAN                                                    
 -----------------------------------------------------------------------------------------------------------------
- Sort  (cost=1129963.14..1129965.63 rows=997 width=36)
+ Sort  (cost=1129915.67..1129918.16 rows=997 width=36)
    Sort Key: movie.production_year DESC, movie.title
-   ->  Nested Loop  (cost=75911.34..1129913.48 rows=997 width=36)
-         ->  Nested Loop  (cost=75910.91..1129450.54 rows=997 width=25)
-               ->  Nested Loop Semi Join  (cost=75910.48..1128531.41 rows=1994 width=12)
-                     ->  Hash Semi Join  (cost=75909.90..1127233.38 rows=1994 width=8)
+   ->  Nested Loop  (cost=75911.34..1129866.01 rows=997 width=36)
+         ->  Nested Loop  (cost=75910.91..1129403.07 rows=997 width=25)
+               ->  Nested Loop Semi Join  (cost=75910.48..1128483.94 rows=1994 width=12)
+                     ->  Hash Semi Join  (cost=75909.90..1127185.91 rows=1994 width=8)
                            Hash Cond: (cast_info.person_role_id = char_name.id)
-                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=12)
                            ->  Hash  (cost=75909.89..75909.89 rows=1 width=4)
                                  ->  Seq Scan on char_name  (cost=0.00..75909.89 rows=1 width=4)
                                        Filter: ((name)::text = 'Morpheus'::text)

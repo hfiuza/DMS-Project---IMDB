@@ -24,7 +24,7 @@ This query is more complicated and results in a better performance
 Total time:  12394.05 ms
 */
 
-EXPLAIN ANALYZE SELECT DISTINCT movie.title, movie.production_year
+SELECT DISTINCT movie.title, movie.production_year
 FROM movie, person, (SELECT cast_info.person_id, cast_info.movie_id
                      FROM cast_info
                      WHERE cast_info.person_id IN (SELECT person.id FROM person

@@ -1,18 +1,18 @@
                                                   QUERY PLAN                                                   
 ---------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=1221334.32..1221334.34 rows=1 width=40)
-   ->  Subquery Scan on number_of_movies_by_year  (cost=1221334.30..1221334.32 rows=1 width=40)
-         ->  HashAggregate  (cost=1221334.30..1221334.31 rows=1 width=4)
+ Aggregate  (cost=1221285.81..1221285.83 rows=1 width=40)
+   ->  Subquery Scan on number_of_movies_by_year  (cost=1221285.78..1221285.80 rows=1 width=40)
+         ->  HashAggregate  (cost=1221285.78..1221285.79 rows=1 width=4)
                Group Key: movie.production_year
-               ->  Nested Loop  (cost=1221092.82..1221334.29 rows=1 width=4)
-                     ->  Nested Loop  (cost=1221092.67..1221329.61 rows=26 width=8)
-                           ->  HashAggregate  (cost=1221092.24..1221092.52 rows=28 width=4)
+               ->  Nested Loop  (cost=1221044.31..1221285.78 rows=1 width=4)
+                     ->  Nested Loop  (cost=1221044.16..1221281.10 rows=26 width=8)
+                           ->  HashAggregate  (cost=1221043.73..1221044.01 rows=28 width=4)
                                  Group Key: cast_info.movie_id
-                                 ->  Hash Join  (cost=109419.55..1221092.17 rows=28 width=4)
+                                 ->  Hash Join  (cost=109422.74..1221043.66 rows=28 width=4)
                                        Hash Cond: (cast_info.person_id = person.id)
-                                       ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
-                                       ->  Hash  (cost=109419.51..109419.51 rows=3 width=4)
-                                             ->  Seq Scan on person  (cost=0.00..109419.51 rows=3 width=4)
+                                       ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8)
+                                       ->  Hash  (cost=109422.70..109422.70 rows=3 width=4)
+                                             ->  Seq Scan on person  (cost=0.00..109422.70 rows=3 width=4)
                                                    Filter: ((name)::text = 'Fonzi, Dolores'::text)
                            ->  Index Scan using movie_pkey on movie  (cost=0.43..8.45 rows=1 width=12)
                                  Index Cond: (id = cast_info.movie_id)

@@ -227,16 +227,16 @@ B. Query plans
 Query 1
                                                QUERY PLAN                                               
 --------------------------------------------------------------------------------------------------------
- Unique  (cost=1163002.99..1163020.24 rows=2300 width=21)
-   ->  Sort  (cost=1163002.99..1163008.74 rows=2300 width=21)
+ Unique  (cost=1162958.71..1162975.96 rows=2300 width=21)
+   ->  Sort  (cost=1162958.71..1162964.46 rows=2300 width=21)
          Sort Key: movie.production_year DESC, movie.title
-         ->  Nested Loop  (cost=109420.41..1162874.57 rows=2300 width=21)
-               ->  Nested Loop  (cost=109419.98..1161806.61 rows=2300 width=29)
-                     ->  Hash Semi Join  (cost=109419.55..1160746.43 rows=2300 width=12)
+         ->  Nested Loop  (cost=109423.60..1162830.29 rows=2300 width=21)
+               ->  Nested Loop  (cost=109423.17..1161762.33 rows=2300 width=29)
+                     ->  Hash Semi Join  (cost=109422.74..1160702.15 rows=2300 width=12)
                            Hash Cond: (cast_info.person_id = person_1.id)
-                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
-                           ->  Hash  (cost=109419.51..109419.51 rows=3 width=4)
-                                 ->  Seq Scan on person person_1  (cost=0.00..109419.51 rows=3 width=4)
+                           ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8)
+                           ->  Hash  (cost=109422.70..109422.70 rows=3 width=4)
+                                 ->  Seq Scan on person person_1  (cost=0.00..109422.70 rows=3 width=4)
                                        Filter: ((name)::text = 'Cage, Nicolas'::text)
                      ->  Index Scan using movie_pkey on movie  (cost=0.43..0.45 rows=1 width=25)
                            Index Cond: (id = cast_info.movie_id)
@@ -247,14 +247,14 @@ Query 1
 Query 2
                                                    QUERY PLAN                                                    
 -----------------------------------------------------------------------------------------------------------------
- Sort  (cost=1129963.14..1129965.63 rows=997 width=36)
+ Sort  (cost=1129915.67..1129918.16 rows=997 width=36)
    Sort Key: movie.production_year DESC, movie.title
-   ->  Nested Loop  (cost=75911.34..1129913.48 rows=997 width=36)
-         ->  Nested Loop  (cost=75910.91..1129450.54 rows=997 width=25)
-               ->  Nested Loop Semi Join  (cost=75910.48..1128531.41 rows=1994 width=12)
-                     ->  Hash Semi Join  (cost=75909.90..1127233.38 rows=1994 width=8)
+   ->  Nested Loop  (cost=75911.34..1129866.01 rows=997 width=36)
+         ->  Nested Loop  (cost=75910.91..1129403.07 rows=997 width=25)
+               ->  Nested Loop Semi Join  (cost=75910.48..1128483.94 rows=1994 width=12)
+                     ->  Hash Semi Join  (cost=75909.90..1127185.91 rows=1994 width=8)
                            Hash Cond: (cast_info.person_role_id = char_name.id)
-                           ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=12)
                            ->  Hash  (cost=75909.89..75909.89 rows=1 width=4)
                                  ->  Seq Scan on char_name  (cost=0.00..75909.89 rows=1 width=4)
                                        Filter: ((name)::text = 'Morpheus'::text)
@@ -273,23 +273,23 @@ Query 2
 Query 3
                                                      QUERY PLAN                                                     
 --------------------------------------------------------------------------------------------------------------------
- Sort  (cost=2275683.07..2275683.08 rows=3 width=15)
+ Sort  (cost=2275576.39..2275576.40 rows=3 width=15)
    Sort Key: person.name
-   ->  Nested Loop  (cost=2275658.04..2275683.04 rows=3 width=15)
-         ->  HashAggregate  (cost=2275657.60..2275657.63 rows=3 width=4)
+   ->  Nested Loop  (cost=2275551.36..2275576.37 rows=3 width=15)
+         ->  HashAggregate  (cost=2275550.93..2275550.96 rows=3 width=4)
                Group Key: ci1.person_id
-               ->  Hash Join  (cost=1118611.83..2275657.60 rows=3 width=4)
+               ->  Hash Join  (cost=1118559.70..2275550.92 rows=3 width=4)
                      Hash Cond: ((ci1.movie_id = ci2.movie_id) AND (ci1.person_id = ci2.person_id))
-                     ->  Hash Join  (cost=23.61..1117062.27 rows=536632 width=8)
+                     ->  Hash Join  (cost=23.61..1117010.19 rows=536594 width=8)
                            Hash Cond: (ci1.role_id = rt1.id)
-                           ->  Seq Scan on cast_info ci1  (cost=0.00..910435.52 rows=53663152 width=12)
+                           ->  Seq Scan on cast_info ci1  (cost=0.00..910397.92 rows=53659392 width=12)
                            ->  Hash  (cost=23.50..23.50 rows=9 width=4)
                                  ->  Seq Scan on role_type rt1  (cost=0.00..23.50 rows=9 width=4)
                                        Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
-                     ->  Hash  (cost=1114078.67..1114078.67 rows=238503 width=8)
-                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=8)
+                     ->  Hash  (cost=1114026.80..1114026.80 rows=238486 width=8)
+                           ->  Hash Join  (cost=21.30..1114026.80 rows=238486 width=8)
                                  Hash Cond: (ci2.role_id = rt2.id)
-                                 ->  Seq Scan on cast_info ci2  (cost=0.00..910435.52 rows=53663152 width=12)
+                                 ->  Seq Scan on cast_info ci2  (cost=0.00..910397.92 rows=53659392 width=12)
                                  ->  Hash  (cost=21.25..21.25 rows=4 width=4)
                                        ->  Seq Scan on role_type rt2  (cost=0.00..21.25 rows=4 width=4)
                                              Filter: ((role)::text = 'director'::text)
@@ -300,28 +300,28 @@ Query 3
 Query 4
                                                      QUERY PLAN                                                     
 --------------------------------------------------------------------------------------------------------------------
- Sort  (cost=2361563.55..2361738.55 rows=70003 width=15)
+ Sort  (cost=2355179.13..2355181.25 rows=848 width=15)
    Sort Key: person.name
-   ->  Hash Join  (cost=2237628.98..2355930.01 rows=70003 width=15)
-         Hash Cond: (cast_info.person_id = cast_info_1.person_id)
-         ->  Hash Join  (cost=1116950.03..1234288.52 rows=70003 width=23)
+   ->  Hash Join  (cost=2237524.89..2355137.88 rows=848 width=15)
+         Hash Cond: (person.id = cast_info_1.person_id)
+         ->  Hash Join  (cost=1116898.11..1234240.11 rows=70003 width=23)
                Hash Cond: (person.id = cast_info.person_id)
-               ->  Seq Scan on person  (cost=0.00..94981.61 rows=5775161 width=19)
-               ->  Hash  (cost=1116074.99..1116074.99 rows=70003 width=4)
-                     ->  HashAggregate  (cost=1114674.93..1115374.96 rows=70003 width=4)
+               ->  Seq Scan on person  (cost=0.00..94984.16 rows=5775416 width=19)
+               ->  Hash  (cost=1116023.08..1116023.08 rows=70003 width=4)
+                     ->  HashAggregate  (cost=1114623.02..1115323.05 rows=70003 width=4)
                            Group Key: cast_info.person_id
-                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=4)
+                           ->  Hash Join  (cost=21.30..1114026.80 rows=238486 width=4)
                                  Hash Cond: (cast_info.role_id = role_type.id)
-                                 ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8)
                                  ->  Hash  (cost=21.25..21.25 rows=4 width=4)
                                        ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4)
                                              Filter: ((role)::text = 'director'::text)
-         ->  Hash  (cost=1119803.91..1119803.91 rows=70003 width=4)
-               ->  HashAggregate  (cost=1118403.85..1119103.88 rows=70003 width=4)
+         ->  Hash  (cost=1119751.74..1119751.74 rows=70003 width=4)
+               ->  HashAggregate  (cost=1118351.68..1119051.71 rows=70003 width=4)
                      Group Key: cast_info_1.person_id
-                     ->  Hash Join  (cost=23.61..1117062.27 rows=536632 width=4)
+                     ->  Hash Join  (cost=23.61..1117010.19 rows=536594 width=4)
                            Hash Cond: (cast_info_1.role_id = role_type_1.id)
-                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910435.52 rows=53663152 width=8)
+                           ->  Seq Scan on cast_info cast_info_1  (cost=0.00..910397.92 rows=53659392 width=8)
                            ->  Hash  (cost=23.50..23.50 rows=9 width=4)
                                  ->  Seq Scan on role_type role_type_1  (cost=0.00..23.50 rows=9 width=4)
                                        Filter: (((role)::text = 'actor'::text) OR ((role)::text = 'actress'::text))
@@ -330,17 +330,17 @@ Query 4
 Query 5
                                                QUERY PLAN                                                
 ---------------------------------------------------------------------------------------------------------
- Nested Loop  (cost=1149164.05..1149333.02 rows=20 width=17)
-   ->  Limit  (cost=1149163.62..1149163.67 rows=20 width=4)
-         ->  Sort  (cost=1149163.62..1149759.88 rows=238503 width=4)
+ Nested Loop  (cost=1149109.79..1149278.76 rows=20 width=17)
+   ->  Limit  (cost=1149109.36..1149109.41 rows=20 width=4)
+         ->  Sort  (cost=1149109.36..1149705.57 rows=238486 width=4)
                Sort Key: (count(cast_info.movie_id)) DESC
-               ->  GroupAggregate  (cost=1138643.34..1142817.14 rows=238503 width=4)
+               ->  GroupAggregate  (cost=1138589.83..1142763.33 rows=238486 width=4)
                      Group Key: cast_info.movie_id
-                     ->  Sort  (cost=1138643.34..1139239.60 rows=238503 width=4)
+                     ->  Sort  (cost=1138589.83..1139186.04 rows=238486 width=4)
                            Sort Key: cast_info.movie_id
-                           ->  Hash Join  (cost=21.30..1114078.67 rows=238503 width=4)
+                           ->  Hash Join  (cost=21.30..1114026.80 rows=238486 width=4)
                                  Hash Cond: (cast_info.role_id = role_type.id)
-                                 ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
+                                 ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8)
                                  ->  Hash  (cost=21.25..21.25 rows=4 width=4)
                                        ->  Seq Scan on role_type  (cost=0.00..21.25 rows=4 width=4)
                                              Filter: ((role)::text = 'director'::text)
@@ -368,19 +368,19 @@ Query 6
 Query 7
                                                   QUERY PLAN                                                   
 ---------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=1221334.32..1221334.34 rows=1 width=40)
-   ->  Subquery Scan on number_of_movies_by_year  (cost=1221334.30..1221334.32 rows=1 width=40)
-         ->  HashAggregate  (cost=1221334.30..1221334.31 rows=1 width=4)
+ Aggregate  (cost=1221285.81..1221285.83 rows=1 width=40)
+   ->  Subquery Scan on number_of_movies_by_year  (cost=1221285.78..1221285.80 rows=1 width=40)
+         ->  HashAggregate  (cost=1221285.78..1221285.79 rows=1 width=4)
                Group Key: movie.production_year
-               ->  Nested Loop  (cost=1221092.82..1221334.29 rows=1 width=4)
-                     ->  Nested Loop  (cost=1221092.67..1221329.61 rows=26 width=8)
-                           ->  HashAggregate  (cost=1221092.24..1221092.52 rows=28 width=4)
+               ->  Nested Loop  (cost=1221044.31..1221285.78 rows=1 width=4)
+                     ->  Nested Loop  (cost=1221044.16..1221281.10 rows=26 width=8)
+                           ->  HashAggregate  (cost=1221043.73..1221044.01 rows=28 width=4)
                                  Group Key: cast_info.movie_id
-                                 ->  Hash Join  (cost=109419.55..1221092.17 rows=28 width=4)
+                                 ->  Hash Join  (cost=109422.74..1221043.66 rows=28 width=4)
                                        Hash Cond: (cast_info.person_id = person.id)
-                                       ->  Seq Scan on cast_info  (cost=0.00..910435.52 rows=53663152 width=8)
-                                       ->  Hash  (cost=109419.51..109419.51 rows=3 width=4)
-                                             ->  Seq Scan on person  (cost=0.00..109419.51 rows=3 width=4)
+                                       ->  Seq Scan on cast_info  (cost=0.00..910397.92 rows=53659392 width=8)
+                                       ->  Hash  (cost=109422.70..109422.70 rows=3 width=4)
+                                             ->  Seq Scan on person  (cost=0.00..109422.70 rows=3 width=4)
                                                    Filter: ((name)::text = 'Fonzi, Dolores'::text)
                            ->  Index Scan using movie_pkey on movie  (cost=0.43..8.45 rows=1 width=12)
                                  Index Cond: (id = cast_info.movie_id)
@@ -391,7 +391,7 @@ Query 7
 (20 rows)
 
 Query 8
-                                                            QUERYPLAN                                                            
+                                                            QUERY PLAN                                                            
 ----------------------------------------------------------------------------------------------------------------------------------
  Sort  (cost=326434.80..326534.38 rows=39834 width=34)
    Sort Key: m1.title, m2.title
@@ -417,6 +417,7 @@ Query 8
                                              ->  Hash  (cost=154.99..154.99 rows=9999 width=8)
                                                    ->  Seq Scan on movie_link movie_link_1  (cost=0.00..154.99 rows=9999 width=8)
 (23 rows)
+
 
 
 
