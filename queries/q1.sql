@@ -24,12 +24,12 @@ This query is more complicated and results in a better performance
 Total time:  12394.05 ms
 */
 
-SELECT DISTINCT movie.title, movie.production_year
-FROM movie, person, (SELECT cast_info.person_id, cast_info.movie_id
+SELECT movie.title, movie.production_year
+FROM movie, (SELECT DISTINCT cast_info.movie_id
                      FROM cast_info
-                     WHERE cast_info.person_id IN (SELECT person.id FROM person
-                                                   WHERE person.name = 'Cage, Nicolas')
+                     WHERE cast_info.person_id IN (SELECT aka_name.person_id FROM aka_name
+                                                   WHERE (aka_name.name = 'Cage, Nicholas' OR aka_name.name='Cage, Nicolas'))
                      ) AS ids
-WHERE person.id = ids.person_id AND movie.id = ids.movie_id
+WHERE movie.id = ids.movie_id
 ORDER BY movie.production_year DESC, movie.title ASC;
 

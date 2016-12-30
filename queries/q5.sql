@@ -1,7 +1,7 @@
 /* Find the titles of the twenty movies having the largest number of directors and their number of directors, ordered by their number of directors in decreasing order. */
 
 /*
-    Total time: 22.228429000
+    Actual time: 22.228429000
 */
 
 SELECT movie.title

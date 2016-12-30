@@ -31,7 +31,7 @@ After optimizing: 47178.64 to 47267.14 ms
 
 */
 
-EXPLAIN SELECT person.name
+SELECT person.name
 FROM person, (SELECT DISTINCT cast_info.person_id
               FROM cast_info, role_type
               WHERE role_type.role = 'director'

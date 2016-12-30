@@ -35,17 +35,19 @@ SELECT * FROM search_graph;*/
 
 WITH RECURSIVE search_graph(first_id, last_id, path, cycle) AS (
 				SELECT movie_link.movie_id AS first_id, movie_link.linked_movie_id AS last_id,
-					ARRAY[movie_link.movie_id] AS path,
+					ARRAY[movie_link.movie_id, movie_link.linked_movie_id] AS path,
 					false AS cycle
 				FROM movie_link
-			UNION
+			UNION ALL
 				SELECT movie_link.movie_id AS first_id, sg.last_id AS last_id,
-					path || movie_link.movie_id AS path,
+					movie_link.movie_id || path AS path,
 					movie_link.movie_id = ANY(path) AS cycle
 				FROM movie_link, search_graph sg
 				WHERE movie_link.linked_movie_id = sg.first_id AND NOT cycle
 )
-SELECT * FROM search_graph
+SELECT first_id, last_id FROM search_graph WHERE NOT cycle
+
+
 
 
 /*
