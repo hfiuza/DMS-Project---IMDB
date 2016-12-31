@@ -53,4 +53,4 @@ FROM (SELECT COUNT(movie.production_year) AS amount, movie.production_year
             AND movie.id = movies_count.movie_id AND movie.production_year IS NOT NULL
       GROUP BY movie.production_year
      ) AS number_of_movies_by_year
-*
+*/
